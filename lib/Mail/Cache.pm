@@ -12,11 +12,11 @@ Mail::Cache - Caches mail info.
 
 =head1 VERSION
 
-Version 0.0.0
+Version 0.1.0
 
 =cut
 
-our $VERSION = '0.0.0';
+our $VERSION = '0.1.0';
 
 
 =head1 SYNOPSIS
@@ -153,9 +153,9 @@ sub getDates{
 	}
 
 	#read it into @dates
-	open(GETSDATES, $dir.'.Dates');
-	my @dates=<GETDATES>;
-	close(GETDATES);
+	open(GETDATESFH, $dir.'.Dates');
+	my @dates=<GETDATESFH>;
+	close(GETDATESFH);
 
 	#this is what will be returned
 	my %toreturn;
@@ -440,6 +440,8 @@ This gets a list of UIDs.
 sub listUIDs{
 	my $self=$_[0];
 
+	$self->errorblank;
+
 	my $dir=$self->{home}.'/'.$self->{cache}.'/'.$self->{type}.'/'.
 	        $self->{account}.'/'.$self->{box}.'/';
 
@@ -451,10 +453,125 @@ sub listUIDs{
 	}
 
 	opendir(LISTUIDS, $dir);
-	my @uids=grep(!/^\./, <LISTUIDS>);
+	my @uids=grep(!/^\./, readdir(LISTUIDS));
 	closedir(LISTUIDS);
 
 	return @uids;
+}
+
+=head2 removeUIDs
+
+This removes a array of specified UIDs. This is used for cleaning it up.
+See Mail::IMAPTalk::MailCache for a example of how to use this.
+
+    $mc->removeUIDs(\@uids);
+
+=cut
+
+sub removeUIDs{
+	my $self=$_[0];
+	my @uids;
+	if (defined($_[1])) {
+		@uids=@{$_[1]};
+	}
+
+	$self->errorblank;
+
+	#if nothing is given, no reason to go ahead with the rest
+	if (!defined($uids[0])) {
+		return 1;
+	}
+
+	my $dir=$self->{home}.'/'.$self->{cache}.'/'.$self->{type}.'/'.
+        	$self->{account}.'/'.$self->{box}.'/';
+
+	#gets the subject cache
+	open(SUBJECTREAD, '<', $dir.'/.Subject');
+	my @subjectcache=<SUBJECTREAD>;
+	close(SUBJECTREAD);
+
+	#gets the from cache
+	open(FROMREAD, '<', $dir.'/.From');
+	my @fromcache=<FROMREAD>;
+	close(FROMREAD);
+
+	#gets the date cache
+	open(DATEREAD, '<', $dir.'/.Date');
+	my @datecache=<DATEREAD>;
+	close(DATEREAD);
+
+	#get the size cache
+	open(SIZEREAD, '<', $dir.'/.size');
+	my @sizecache=<SIZEREAD>;
+	close(SIZEREAD);
+
+	#process each one
+	my $int=0;
+	while (defined($uids[$int])) {
+		my $uid=$uids[$int];
+
+		my $process=1;
+
+		if ($uid=~/^\./) {
+			$process=0;
+		}
+
+		if ($uid=~/\//) {
+			$process=0;
+		}
+
+		if ($uid=~/\\/) {
+			$process=0;
+		}
+
+		#should never start with a . or match /
+		if ($process) {
+			#remove the old subject
+			my $subjectremove='^'.quotemeta($uid).'\|';
+			@subjectcache=grep(!/$subjectremove/, @subjectcache);
+			
+			#remove the old from
+			my $fromremove='^'.quotemeta($uid).'\|';
+			@fromcache=grep(!/$fromremove/, @subjectcache);
+			
+			#removes the old date
+			my $dateremove='^'.quotemeta($uid).'\|';
+			@datecache=grep(!/$dateremove/, @datecache);
+			
+			#removes the old size
+			my $sizeremove='^'.quotemeta($uid).'\|';
+			@sizecache=grep(!/$sizeremove/, @sizecache);
+
+			#remove the header file if it exists
+			if (-f $dir.'/'.$uid) {
+				unlink($dir.'/'.$uid);
+			}
+		}
+
+		$int++;
+	}
+
+	#write the subject info out
+	open(SUBJECTWRITE, '>', $dir.'/.Subject');
+	print SUBJECTWRITE join('', @subjectcache);
+	close(SUBJECTWRITE);
+
+	#write the from cache
+	open(FROMWRITE, '>', $dir.'/.From');
+	print FROMWRITE join('', @fromcache);
+	close(FROMWRITE);
+
+	#write the date cache
+	open(DATEWRITE, '>', $dir.'/.Date');
+	print DATEWRITE join('', @datecache);
+	close(DATEWRITE);
+
+	#write the size cache
+	open(SIZEWRITE, '>', $dir.'/.size');
+	print SIZEWRITE join('', @sizecache);
+	close(SIZEWRITE);
+
+	return 1;
 }
 
 =head2 setAccount
@@ -792,7 +909,7 @@ sub setUID{
 	#handles reading the date cache reming any old entries and readding it
 	my $sizeline=$uid.'|'.$size."\n";
 	my $sizeremove='^'.quotemeta($uid).'\|';
-	open(SIZEREAD, '<', $dir.'/.Size');
+	open(SIZEREAD, '<', $dir.'/.size');
 	my @sizecache=grep(!/$sizeremove/, <SIZEREAD>);
 	close(SIZEREAD);
 	push(@sizecache, $dateline);
