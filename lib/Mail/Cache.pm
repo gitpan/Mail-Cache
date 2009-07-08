@@ -12,11 +12,11 @@ Mail::Cache - Caches mail info.
 
 =head1 VERSION
 
-Version 0.1.0
+Version 0.1.1
 
 =cut
 
-our $VERSION = '0.1.0';
+our $VERSION = '0.1.1';
 
 
 =head1 SYNOPSIS
@@ -145,7 +145,7 @@ sub getDates{
 		warn('Mail-Cache getDates:15: '.$self->{errorString});
 		return undef;
 	}
-	if (! -e $dir.'.Dates') {
+	if (! -e $dir.'.Date') {
 		$self->{error}=16;
 		$self->{errorString}='"'.$dir.'.Size" does not exist';
 		warn('Mail-Cache getDates:16: '.$self->{errorString});
@@ -153,7 +153,7 @@ sub getDates{
 	}
 
 	#read it into @dates
-	open(GETDATESFH, $dir.'.Dates');
+	open(GETDATESFH, $dir.'.Date');
 	my @dates=<GETDATESFH>;
 	close(GETDATESFH);
 
@@ -331,7 +331,7 @@ sub getSubjects{
 		warn('Mail-Cache getSubjects:15: '.$self->{errorString});
 		return undef;
 	}
-	if (! -e $dir.'.Subjects') {
+	if (! -e $dir.'.Subject') {
 		$self->{error}=16;
 		$self->{errorString}='"'.$dir.'.Size" does not exist';
 		warn('Mail-Cache getSubjects:16: '.$self->{errorString});
@@ -339,7 +339,7 @@ sub getSubjects{
 	}
 
 	#read it into @subjects
-	open(GETSUBJECTS, $dir.'.size');
+	open(GETSUBJECTS, $dir.'.Subject');
 	my @subjects=<GETSUBJECTS>;
 	close(GETSUBJECTS);
 
