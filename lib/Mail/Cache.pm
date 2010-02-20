@@ -12,11 +12,11 @@ Mail::Cache - Caches mail info.
 
 =head1 VERSION
 
-Version 0.1.1
+Version 0.1.2
 
 =cut
 
-our $VERSION = '0.1.1';
+our $VERSION = '0.1.2';
 
 
 =head1 SYNOPSIS
@@ -826,7 +826,7 @@ sub setUID{
 		warn('Mail-Cache setUID:8: '.$self->{errorString});
 		return undef;
 	}
-	if (!defined($uid)) {
+	if (!defined($headers)) {
 		$self->{error}=10;
 		$self->{errorString}='No headers specified';
 		warn('Mail-Cache setUID:10: '.$self->{errorString});
@@ -912,7 +912,7 @@ sub setUID{
 	open(SIZEREAD, '<', $dir.'/.size');
 	my @sizecache=grep(!/$sizeremove/, <SIZEREAD>);
 	close(SIZEREAD);
-	push(@sizecache, $dateline);
+	push(@sizecache, $sizeline);
 	open(SIZEWRITE, '>', $dir.'/.size');
 	print SIZEWRITE join('', @sizecache);
 	close(SIZEWRITE);
@@ -1027,6 +1027,10 @@ Failed to create create xdg_cache_home.'/'.$cache.'/'.$account.'/'.$box.'/'.
 =head2 16
 
 "xdg_cache_home.'/'.$cache.'/'.$account.'/'.$box.'/.Size'"  does not exist.
+
+=head2 17
+
+The passed value for the headers was something other than a reference or a hash.
 
 =head1 AUTHOR
 
